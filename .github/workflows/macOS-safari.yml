@@ -27,9 +27,33 @@ jobs:
         run: xcrun safari-web-extension-converter dist/ --macos-only --project-location ./safari/ --app-name SponsorBlock --no-open
       - name: Build Extension
         run: xcodebuild -project ./safari/SponsorBlock/SponsorBlock.xcodeproj -configuration Release
+      - run: cp -r ./safari/SponsorBlock/Release/SponsorBlock.app .
       - name: Zip App Bundle (unsigned)
-        run: zip -r Unsigned.app.zip ./safari/SponsorBlock/build/Release/SponsorBlock.app
+        run: zip -r Unsigned.app.zip ./SponsorBlock.app
       - uses: actions/upload-artifact@v4
         with:
           name: SponsorBlock-unsigned.app
           path: ./Unsigned.app.zip
+      - name: Prepare certificate
+        run: |
+          echo "${{ secrets.CERTIFICATE }}" | base64 --decode > certificate.p12
+          security create-keychain -p "" build.keychain
+          security import certificate.p12 -k build.keychain -P "${{ secrets.CERTIFICATE_PASSWORD }}" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+          security list-keychains -s build.keychain
+      - name: Export public certificate
+        run: |
+          security export -k build.keychain -t certs -o public.cer -f x509
+      - uses: actions/upload-artifact@v4
+        with:
+          name: public.cer
+          path: public.cer
+      - name: Sign the app
+        run: 'codesign --deep --force --verbose --sign "SponsorBlock Selfsigned Certificate" ./SponsorBlock.app'
+      - name: Zip App Bundle (Signed)
+        run: zip -r SponsorBlock.app.zip ./SponsorBlock.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SponsorBlock.app
+          path: ./SponsorBlock.app.zip
+      
