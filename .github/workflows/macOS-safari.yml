@@ -27,7 +27,7 @@ jobs:
         run: xcrun safari-web-extension-converter dist/ --macos-only --project-location ./safari/ --app-name SponsorBlock --no-open
       - name: Build Extension
         run: xcodebuild -project ./safari/SponsorBlock/SponsorBlock.xcodeproj -configuration Release
-      - run: cp -r ./safari/SponsorBlock/Release/SponsorBlock.app .
+      - run: cp -r ./safari/SponsorBlock/build/Release/SponsorBlock.app .
       - name: Zip App Bundle (unsigned)
         run: zip -r Unsigned.app.zip ./SponsorBlock.app
       - uses: actions/upload-artifact@v4
